@@ -1,18 +1,25 @@
 import java.util.*;
 import java.io.*;
 
-public class regestrationCommands {
+public class regestrationFormat {
 
 	public static void main(String[] args) throws IOException {
 		Scanner sc = new Scanner(new File("data.in"));
 		String school = sc.nextLine();
 		ArrayList<String> commands = new ArrayList<String>();
 		while(sc.hasNext()) {
+			sc.next(); sc.next();
 			String fName = sc.next();
+			fName = fName.substring(0, fName.length()-1);
+			sc.next(); sc.next();
 			String lName = sc.next();
-			int grade = sc.nextInt();
+			lName = lName.substring(0, lName.length()-1);
+			sc.next();
+			String grade = sc.next();
+			grade = grade.substring(0, grade.length()-1);
 			String curr = "kid "+school+" "+fName+" "+lName+" "+grade;
 			commands.add(curr);
+			sc.nextLine();
 		}
 		System.out.println("school " + school );
 		for(int i = 0; i < commands.size(); i++) {
