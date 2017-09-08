@@ -1,0 +1,23 @@
+import java.util.*;
+import java.io.*;
+
+public class regestrationCommands {
+
+	public static void main(String[] args) throws IOException {
+		Scanner sc = new Scanner(new File("data.in"));
+		String school = sc.nextLine();
+		ArrayList<String> commands = new ArrayList<String>();
+		while(sc.hasNext()) {
+			String fName = sc.next();
+			String lName = sc.next();
+			int grade = sc.nextInt();
+			String curr = "kid "+school+" "+fName+" "+lName+" "+grade;
+			commands.add(curr);
+		}
+		System.out.println("school " + school );
+		for(int i = 0; i < commands.size(); i++) {
+			System.out.println(commands.get(i));
+		}
+		sc.close();
+	}
+}
