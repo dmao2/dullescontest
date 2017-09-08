@@ -1,0 +1,305 @@
+/*
+LANG: JAVA
+TASK: 
+*/
+
+import java.io.*;
+import java.util.*;
+
+public class dhsc
+{
+	public static void main(String[] args) throws IOException
+	{
+		Scanner c = new Scanner(System.in);
+		
+		trie t = new trie();
+		for(int i=0; i<30; i++)
+		{
+			String code = c.next();
+			if(code.equals("school"))
+			{
+				t.add(c.next(), t.root, 0);
+			}
+			else if(code.equals("kid"))
+			{
+				t.add(c.next(), c.next(), c.next(), c.nextInt());
+			}
+			else
+			{
+				t.update(code, c.nextInt(), c.nextInt());
+			}
+			t.tab();
+		}
+	}
+
+	public static class trie
+	{
+		node root = new node('$');
+		public class node
+		{
+			char c; 
+			boolean[] is = new boolean[3]; //is[0] = is_school, is[1] = is_fName, is[2] = is_lName
+			int[] score = new int[4];
+			int grade;
+			HashMap<Character, node> children = new HashMap<Character, node>();
+			public node(char c)
+			{
+				this.c=c; 
+				Arrays.fill(score, -1);
+			}
+			public int setScore(int sub, int val)
+			{
+				if(score[sub] == -1) return 1; // not registered
+				else if(score[sub] > 0) return 2; // override
+				score[sub] = val;
+				
+				return 0;
+			}
+			public boolean isEnd()
+			{
+				return is[0] || is[1] || is[2];
+			}
+			public node clone()
+			{
+				node clone = new node(c);
+				clone.is[0] = is[0]; clone.is[1] = is[1]; clone.is[2] = is[2];
+				clone.score[0] = score[0]; clone.score[1] = score[1]; clone.score[2] = score[2]; clone.score[3] = score[3];
+				clone.children = (HashMap<Character, node>) children.clone();
+				return clone;
+			}
+		}
+		
+		public int add(String school, String fName, String lName, int grade)
+		{
+			int ret = 0;
+			ret += add(school, "", 0); ret += add(fName, school, 1); ret += add(lName, school+fName, 2); 
+			if(ret>0) return ret;
+			
+			setGrade(school+fName+lName, grade);
+			return 0;
+		}
+		
+		public int add(String str1, String str2, int type)
+		{
+			if(!contains(str2, root)) return 1;
+			add(str1, strToNode(str2, root), type);
+			return 0;
+		}
+		
+		public void setGrade(String str, int ind)
+		{
+			strToNode(str, root).grade = ind;
+		}
+		
+		public void add(String str, node rt, int type) // rt adds str, version = is[type].
+		{
+			node n = rt;
+			for(int i=0; i<str.length(); i++)
+			{
+				if(n.children.containsKey(str.charAt(i)))
+					n = n.children.get(str.charAt(i));
+				else
+				{
+					n.children.put(str.charAt(i), new node(str.charAt(i)));
+					n = n.children.get(str.charAt(i));
+				}
+				if(i==str.length()-1) 
+				{
+					n.is[type] = true;
+				}
+			}
+		}
+		public boolean contains(String str, node rt) // check if rt holds prefix str
+		{
+			node n = root;
+			for(int i=0; i<str.length(); i++)
+			{
+				if(n.children.containsKey(str.charAt(i)))
+					n = n.children.get(str.charAt(i));
+				else
+					return false;
+			}
+			return true;
+		}
+		public boolean containsE(String str, node rt) // check if rt holds word str
+		{
+			node n = root;
+			for(int i=0; i<str.length(); i++)
+			{
+				if(n.children.containsKey(str.charAt(i)))
+					n = n.children.get(str.charAt(i));
+				else
+					return false;
+			}
+			return n.isEnd();
+		}
+		public void remove(String str, node rt) // rt holds str, type = 0:school, 1:f_name, 2:l_name
+		{
+			if(!containsE(str, rt)) return;
+			
+			node n = root, lastG = null; int indG = 0;
+			for(int i=0; i<str.length(); i++)
+			{
+				if(n.isEnd() || n.children.size()>1) 
+				{
+					lastG = n; indG = i;
+				}
+				n = n.children.get(str.charAt(i));
+				if(i==str.length()-1 && n.children.size()>0) 
+				{
+					n.is[0] = n.is[1] = n.is[2] = false; return;
+				}
+			}
+			lastG.children.remove(str.charAt(indG));
+		}
+		
+		public node strToNode(String str, node rt)
+		{
+			node n = rt;
+			for(int i=0; i<str.length(); i++)
+			{
+				if(n.children.containsKey(str.charAt(i)))
+					n = n.children.get(str.charAt(i));
+				else
+					return null;
+			}
+			return n;
+		}
+			
+		public void update(String code, int topic, int score)
+		{
+			matches.clear();
+			for(int i=0; i<code.length(); i++)
+			{
+				for(int j=i; j<=code.length(); j++)
+				{
+					 // 0-->i-1, i-->j, j-->len-1
+					find(code.substring(0, i), code.substring(i, j), code.substring(j, code.length()));
+				}
+			}
+			
+			if(matches.size()==0) System.out.println("Sorry. No matches.");
+			else if(matches.size()>1)
+			{
+				System.out.println("Multiple matches detected");
+				for(String str: matches) System.out.println("-- "+str);
+			}
+			else 
+			{
+				for(String str: matches)
+				{
+					node n = root;
+					for(int i=0; i<str.length(); i++)
+					{
+						if(n.children.containsKey(str.charAt(i)))
+							n = n.children.get(str.charAt(i));
+					}
+					if(n.score[topic] > 0) System.out.println(str+" already has a score of "+n.score[topic]);
+					System.out.println("Proceed with update of "+score+" in "+toTopic(topic)+" for "+str);
+					if(new Scanner(System.in).next().equals("y")) 
+					{
+						n.score[topic] = score;
+					}
+				}
+			}
+		}
+		public void find(String school, String name1, String name2)
+		{
+			node n = root;
+			for(int i=0; i<school.length(); i++)
+			{
+				if(n.children.containsKey(school.charAt(i)))
+					n = n.children.get(school.charAt(i));
+				else return;
+			}
+			String[] sendMeOut = {school, name1, name2};
+			dfs(n, sendMeOut, 0, (school.length()==0?"":school.substring(0, school.length()-1)));
+		}
+		
+		HashSet<String> matches = new HashSet<String>();
+		public void dfs(node n, String[] arr, int type, String ret)
+		{
+			if(n.is[type])
+			{
+				boolean works = true;
+				if(type==2)
+				{
+					matches.add(ret+n.c); works = false;
+				}
+				
+				node next = n.clone(); 
+				for(int i=0; works && i<arr[type+1].length(); i++)
+				{
+					if(next.children.containsKey(arr[type+1].charAt(i)))
+						next = next.children.get(arr[type+1].charAt(i));
+					else works = false;
+				}
+				if(works)
+				{
+					String str = (arr[type+1].length()==0 ? "":arr[type+1].substring(0, arr[type+1].length()-1));
+					dfs(next, arr, type+1, ret+n.c+str);
+				}
+			}
+			for(char ch: n.children.keySet()) dfs(n.children.get(ch), arr, type, ret+n.c);
+		}
+		
+		
+		public void tab()
+		{
+			list.clear();
+			String[] base = {"", "", ""};
+			getResults(root, base, 0);
+			System.out.println(list);
+		}
+		
+		ArrayList<scoreObject> list = new ArrayList<scoreObject>();
+		public void getResults(node n, String[] arr, int type)
+		{
+			arr[type] += n.c;
+			if(n.is[0]) 
+			{
+				arr[0]+=arr[1]+arr[2];
+				arr[1] = ""; arr[2] = "";
+				// ^^ in case of beck / beckendorff cases...
+				
+				type=1;
+			}
+			else if(n.is[1]) type=2;
+			else if(n.is[2])
+			{
+				list.add(new scoreObject(n.score, n.grade, arr[0], arr[1], arr[2])); return;
+			}
+			for(char c: n.children.keySet())
+			{
+				getResults(n.children.get(c), arr.clone(), type); 
+			}
+		}
+		
+		
+		public class scoreObject
+		{
+			int[] score; int grade; 
+			String f_name; String l_name; String school;
+			public scoreObject(int[] score, int grade, String school, String f_name, String l_name)
+			{
+				this.score=score; this.grade=grade; this.f_name=f_name; this.l_name=l_name; this.school=school;
+			}
+			public String toString()
+			{
+				return "("+f_name+" "+l_name+" "+grade+" "+school+" "+Arrays.toString(score)+")";
+			}
+		}
+		
+	}
+	
+	public static String toTopic(int id)
+	{
+		switch(id)
+		{
+			case 0: return "NS";
+			case 1: return "CALC";
+			case 2: return "MATH";
+			default: return "SCI";
+		}
+	}
+}
