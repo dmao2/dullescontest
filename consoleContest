@@ -1,3 +1,4 @@
+package EducationalGames;
 /*
 LANG: JAVA
 TASK: 
@@ -13,16 +14,17 @@ public class dhsc
 		Scanner c = new Scanner(System.in);
 		
 		trie t = new trie();
-		for(int i=0; i<30; i++)
+		while(true)
 		{
 			String code = c.next();
+			if(code.equals("Done")) break;
 			if(code.equals("school"))
 			{
 				t.add(c.next(), t.root, 0);
 			}
 			else if(code.equals("kid"))
 			{
-				t.add(c.next(), c.next(), c.next(), c.nextInt());
+				t.add(c.next(), c.next(), c.next(), c.nextInt(), c.nextInt());
 			}
 			else
 			{
@@ -35,24 +37,36 @@ public class dhsc
 	public static class trie
 	{
 		node root = new node('$');
-		public class node
+		class node
 		{
-			char c; 
-			boolean[] is = new boolean[3]; //is[0] = is_school, is[1] = is_fName, is[2] = is_lName
-			int[] score = new int[4];
-			int grade;
-			HashMap<Character, node> children = new HashMap<Character, node>();
+			private char c; 
+			private boolean[] is = new boolean[3]; //is[0] = is_school, is[1] = is_fName, is[2] = is_lName
+			private int[] score = new int[4];
+			private int grade;
+			private HashMap<Character, node> children = new HashMap<Character, node>();
 			public node(char c)
 			{
 				this.c=c; 
 				Arrays.fill(score, -1);
 			}
-			public int setScore(int sub, int val)
+			public int setScore(String name, int sub, int val)
 			{
-				if(score[sub] == -1) return 1; // not registered
-				else if(score[sub] > 0) return 2; // override
-				score[sub] = val;
+				if(score[sub] == -1) 
+				{
+					System.out.println(name+" has yet to register for "+toTopic(sub));
+					return 1; // not registered
+				}
+				else if(score[sub] > 0) 
+				{
+					System.out.println(name+" already has a score of "+score[sub]);
+					return 2; // score inputted
+				}
 				
+				System.out.println("Proceed with update of "+val+" in "+toTopic(sub)+" for "+name);
+				if(new Scanner(System.in).next().equals("y")) 
+				{
+					score[sub] = val;
+				}
 				return 0;
 			}
 			public boolean isEnd()
@@ -67,31 +81,44 @@ public class dhsc
 				clone.children = (HashMap<Character, node>) children.clone();
 				return clone;
 			}
+			public void register(int code)
+			{
+				for(int i=0; i<4; i++)
+				{
+					if((code&(1<<i))>0) score[i] = 0;
+				}
+			}
 		}
 		
-		public int add(String school, String fName, String lName, int grade)
+		public int add(String school, String fName, String lName, int grade, int regCode)
 		{
 			int ret = 0;
 			ret += add(school, "", 0); ret += add(fName, school, 1); ret += add(lName, school+fName, 2); 
 			if(ret>0) return ret;
 			
 			setGrade(school+fName+lName, grade);
+			register(school+fName+lName, regCode);
+			
 			return 0;
 		}
 		
-		public int add(String str1, String str2, int type)
+		private int add(String str1, String str2, int type)
 		{
 			if(!contains(str2, root)) return 1;
 			add(str1, strToNode(str2, root), type);
 			return 0;
 		}
 		
-		public void setGrade(String str, int ind)
+		private void register(String str, int regCode)
+		{
+			strToNode(str, root).register(regCode);
+		}
+		private void setGrade(String str, int ind)
 		{
 			strToNode(str, root).grade = ind;
 		}
 		
-		public void add(String str, node rt, int type) // rt adds str, version = is[type].
+		private void add(String str, node rt, int type) // rt adds str, version = is[type].
 		{
 			node n = rt;
 			for(int i=0; i<str.length(); i++)
@@ -111,7 +138,7 @@ public class dhsc
 		}
 		public boolean contains(String str, node rt) // check if rt holds prefix str
 		{
-			node n = root;
+			node n = rt;
 			for(int i=0; i<str.length(); i++)
 			{
 				if(n.children.containsKey(str.charAt(i)))
@@ -153,7 +180,7 @@ public class dhsc
 			lastG.children.remove(str.charAt(indG));
 		}
 		
-		public node strToNode(String str, node rt)
+		private node strToNode(String str, node rt)
 		{
 			node n = rt;
 			for(int i=0; i<str.length(); i++)
@@ -166,7 +193,7 @@ public class dhsc
 			return n;
 		}
 			
-		public void update(String code, int topic, int score)
+		public void update(String code, int topic, int score) // given encryption of (school, first, last), tries updating score of topic.
 		{
 			matches.clear();
 			for(int i=0; i<code.length(); i++)
@@ -194,16 +221,11 @@ public class dhsc
 						if(n.children.containsKey(str.charAt(i)))
 							n = n.children.get(str.charAt(i));
 					}
-					if(n.score[topic] > 0) System.out.println(str+" already has a score of "+n.score[topic]);
-					System.out.println("Proceed with update of "+score+" in "+toTopic(topic)+" for "+str);
-					if(new Scanner(System.in).next().equals("y")) 
-					{
-						n.score[topic] = score;
-					}
+					int err = n.setScore(str, topic, score);
 				}
 			}
 		}
-		public void find(String school, String name1, String name2)
+		private void find(String school, String name1, String name2) // given that school exists, finds whether student attends school
 		{
 			node n = root;
 			for(int i=0; i<school.length(); i++)
@@ -217,7 +239,7 @@ public class dhsc
 		}
 		
 		HashSet<String> matches = new HashSet<String>();
-		public void dfs(node n, String[] arr, int type, String ret)
+		private void dfs(node n, String[] arr, int type, String ret) // given node n of provided type, adds all students matching data in arr to set 'matches'
 		{
 			if(n.is[type])
 			{
@@ -253,7 +275,7 @@ public class dhsc
 		}
 		
 		ArrayList<scoreObject> list = new ArrayList<scoreObject>();
-		public void getResults(node n, String[] arr, int type)
+		private void getResults(node n, String[] arr, int type) // getResults(root...) adds all student's scores into 'list' as scoreObjects
 		{
 			arr[type] += n.c;
 			if(n.is[0]) 
@@ -276,7 +298,7 @@ public class dhsc
 		}
 		
 		
-		public class scoreObject
+		private class scoreObject
 		{
 			int[] score; int grade; 
 			String f_name; String l_name; String school;
@@ -292,7 +314,7 @@ public class dhsc
 		
 	}
 	
-	public static String toTopic(int id)
+	private static String toTopic(int id)
 	{
 		switch(id)
 		{
