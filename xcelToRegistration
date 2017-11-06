@@ -1,0 +1,67 @@
+/*
+LANG: JAVA
+TASK: 
+*/
+
+import java.io.*;
+import java.util.*;
+public class regFormat
+{
+	public static void main(String[] args) throws IOException
+	{
+		Scanner sc = new Scanner(System.in);
+		String bigString = "";
+		while(sc.hasNextLine()) 
+		{
+			String nxt = sc.nextLine();
+			if(nxt.equals("Done")) break;
+			bigString += nxt+" ";
+		}
+		
+		String[] tok = bigString.split("\"\\s.*?Edit Submission");
+		System.out.println(tok.length);
+		System.out.println(Arrays.toString(tok));
+		int count = 0;
+		for(String response: tok)
+		{
+			if(response.contains("Check")) continue;
+			String skool_tm = getSchool(response);
+			String[] tok2 = response.split("First Name: ");
+			for(int i=1; i<tok2.length; i++)
+			{
+				System.out.print("kid "+(skool_tm.length()==0?"homeschool"+count++:skool_tm)+" ");
+				String[] tok3 = tok2[i].split("[ ,:;\\s]+");
+				//Jack, Last Name: Hill, Grade: 12, Tests; Calc Sci Math
+				// ---> Jack|Last|Name|Hill|Grade|12|Tests|Calc|Sci|Math
+//				System.out.println(Arrays.toString(tok3));
+				System.out.print(tok3[0]+" "+tok3[3]+" "+tok3[5]+" ");
+				int code = 0;
+				for(int j=0; j<tok3.length; j++)
+				{
+					switch(tok3[j])
+					{
+						case "NS": code+=1; break;
+						case "Calc": code+=2; break;
+						case "Math": code+=4; break;
+						case "Sci": code+=8; break;
+					}
+				}
+				System.out.print(code);
+				System.out.println();
+			}
+		}
+	}
+	
+	public static String getSchool(String str)
+	{
+		String[] tok = str.split("[ \\s]+");
+		String ret = "";
+		for(int i=0; i<tok.length; i++)
+		{
+//			if(tok[i].contains("hool")) System.out.println("|"+tok[i]+"|");
+			if(! tok[i].matches(".*\\d.*")) ret+=tok[i];
+			if(tok[i].matches("[Ss][Cc][Hh][Oo][Oo][Ll]")) return ret;
+		}
+		return "";
+	}
+}
