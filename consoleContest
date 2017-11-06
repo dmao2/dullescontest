@@ -1,3 +1,4 @@
+package EducationalGames;
 /*
 LANG: JAVA
 TASK: 
@@ -38,11 +39,11 @@ public class dhsc
 		node root = new node('$');
 		class node
 		{
-			private char c; 
+			char c; 
 			private boolean[] is = new boolean[3]; //is[0] = is_school, is[1] = is_fName, is[2] = is_lName
 			private int[] score = new int[4];
 			private int grade;
-			private HashMap<Character, node> children = new HashMap<Character, node>();
+			HashMap<Character, node> children = new HashMap<Character, node>();
 			public node(char c)
 			{
 				this.c=c; 
@@ -271,6 +272,7 @@ public class dhsc
 			String[] base = {"", "", ""};
 			getResults(root, base, 0);
 			System.out.println(list);
+			outputRevenue(root);
 		}
 		
 		ArrayList<scoreObject> list = new ArrayList<scoreObject>();
@@ -308,6 +310,29 @@ public class dhsc
 			public String toString()
 			{
 				return "("+f_name+" "+l_name+" "+grade+" "+school+" "+Arrays.toString(score)+")";
+			}
+		}
+		
+		private void outputRevenue(node rt)
+		{
+			int[] levelMoneys = new int[3];
+			dfsMoney(rt, levelMoneys);
+			System.out.println("money "+Arrays.toString(levelMoneys)+" => total: $"+(levelMoneys[0]+levelMoneys[1]+levelMoneys[2])+".00");
+		}
+		private void dfsMoney(node rt, int[] levelMoneys)
+		{
+			int count = -1;
+			if(rt.grade!=0)
+			{
+				if(rt.grade<6) count=0;
+				else if(rt.grade<9) count=1;
+				else count=2;
+			}
+			if(count>=0) levelMoneys[count] += 6*((rt.score[0]>=0?1:0) + (rt.score[1]>=0?1:0) + (rt.score[2]>=0?1:0) + (rt.score[3]>=0?1:0));
+
+			for(int i: rt.children.keySet())
+			{
+				dfsMoney(rt.children.get((char) i), levelMoneys);
 			}
 		}
 		
