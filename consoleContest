@@ -8,41 +8,42 @@ import java.util.*;
 
 public class dhsc
 {
+	static PrintWriter pSweeps; 
+	static PrintWriter pSolo;
 	public static void main(String[] args) throws IOException
 	{
-		Scanner c = new Scanner(System.in);
+		Scanner c = new Scanner(new File("inputComs"));
+		pSweeps = new PrintWriter(new File("sweeps"));
+		pSolo = new PrintWriter(new File("solo"));
 		
 		trie t = new trie(); int count=0;
-		int e = 0, m = 0, h=0;
-		while(true)
+		int e = 0, m = 0, h=0; 
+		while(c.hasNext())
 		{
 			String code = c.next();
-			if(code.equals("Done")) 
-			{
-				t.tab();
-				System.out.println(e+" "+m+" "+h);
-				break;
-			}
 			if(code.equals("school"))
 			{
 				t.add(c.next(), t.root, 0);
 			}
 			else if(code.equals("kid"))
 			{
-				count++; String str=""; int g = 0;
-				t.add((str=c.next()).toLowerCase(), c.next().toLowerCase(), c.next().toLowerCase(), g=c.nextInt(), c.nextInt());
-//				System.out.println(str);
-				if(g<6) e++;
-				else if(g<9) m++;
+				String schoolName = c.next(), firstName = c.next(), lastName = c.next(); int grade = c.nextInt(), regCode = c.nextInt();
+				int added = t.add(schoolName.toLowerCase(), firstName.toLowerCase(), lastName.toLowerCase(), grade, regCode);
+				if(added > 0) System.out.println("Duplicate Registration "+schoolName +" "+firstName+" "+lastName);
+				count++; 
+				
+				if(grade<6) e++;
+				else if(grade<9) m++;
 				else h++;
 			}
 			else
 			{
 				t.update(code.toLowerCase(), c.nextInt(), c.nextInt());
 			}
-//			t.tab();
-//			System.out.println(count);
 		}
+		t.tab();
+		System.out.println(e+" "+m+" "+h);
+		pSolo.close(); pSweeps.close();
 	}
 
 	public static class trie
@@ -101,10 +102,11 @@ public class dhsc
 			}
 		}
 		
+		/////////// TRIE METHODS /////////////////
 		public int add(String school, String fName, String lName, int grade, int regCode)
 		{
 			int ret = 0;
-			ret += add(school, "", 0); ret += add(fName, school, 1); ret += add(lName, school+fName, 2); 
+			add(school, "", 0); add(fName, school, 1); ret = add(lName, school+fName, 2); 
 			if(ret>0) return ret;
 			
 			setGrade(school+fName+lName, grade);
@@ -115,9 +117,9 @@ public class dhsc
 		
 		private int add(String str1, String str2, int type)
 		{
-			if(!contains(str2, root)) return 1;
-			add(str1, strToNode(str2, root), type);
-			return 0;
+//			if(!contains(str2, root)) return 1;
+			int output = add(str1, strToNode(str2, root), type);
+			return (output != 0) ? 1 : 0;
 		}
 		
 		private void register(String str, int regCode)
@@ -129,8 +131,9 @@ public class dhsc
 			strToNode(str, root).grade = ind;
 		}
 		
-		private void add(String str, node rt, int type) // rt adds str, version = is[type].
+		private int add(String str, node rt, int type) // rt adds str, version = is[type].
 		{
+			if(contains(str, rt)) return 1;
 			node n = rt;
 			for(int i=0; i<str.length(); i++)
 			{
@@ -146,6 +149,7 @@ public class dhsc
 					n.is[type] = true;
 				}
 			}
+			return 0;
 		}
 		public boolean contains(String str, node rt) // check if rt holds prefix str
 		{
@@ -233,7 +237,7 @@ public class dhsc
 							n = n.children.get(str.charAt(i));
 					}
 					int err = n.setScore(str, topic, score);
-				}
+				}//
 			}
 		}
 		private void find(String school, String name1, String name2) // given that school exists, finds whether student attends school
@@ -276,7 +280,7 @@ public class dhsc
 			for(char ch: n.children.keySet()) dfs(n.children.get(ch), arr, type, ret+n.c);
 		}
 		
-		
+		//////////////// TAB METHODS ////////////////////
 		public void tab()
 		{
 			list.clear();
@@ -301,9 +305,23 @@ public class dhsc
 			{
 				for(int j=0; j<5; j++)
 				{
-					System.out.println((j==4?"ALL":toTopic(j))+" "+i+" SWEEPSTAKES");
+					String level = "elem";
+					if(i>=6 && i<= 8) level = "mid";
+					else if(i>8) level = "high";
+					pSweeps.println((j==4?"ALL":toTopic(j))+" "+level.toUpperCase()+" SWEEPSTAKES");
 					Collections.sort(directory, toolbox.getComp(j, i));
-					for(int k=0; k<4; k++) System.out.println(directory.get(k));
+					for(int k=0; k<4; k++)
+					{
+						skool winner = directory.get(k);
+						if(j==4)
+						{
+							pSweeps.printf("%-40s%5d%5d%5d%5d%n", winner, winner.sum0(), winner.sum1(), winner.sum2(), winner.sum3());
+							continue;
+						}
+						String[] winnerKids = winner.topKids(j);
+						pSweeps.printf("%-40s%-30s%-30s%-30s%-30s%n", winner, winnerKids[0], winnerKids[1], winnerKids[2], winnerKids[3]);
+					}
+					pSweeps.println();
 				}
 			}
 		}
@@ -314,6 +332,10 @@ public class dhsc
 			public skool(ArrayList<scoreObject> L, String name)
 			{
 				this.name = name;
+				while(L.size()<=4)
+				{
+					L.add(new scoreObject(new int[4], L.get(0).grade, L.get(0).school, "dummy", "last"));
+				}
 				for(int i=0; i<L.size(); i++) 
 				{
 					L0.add(L.get(i)); L1.add(L.get(i)); L2.add(L.get(i)); L3.add(L.get(i));
@@ -347,14 +369,28 @@ public class dhsc
 						return so2.score[3] - so1.score[3];
 					}
 				});
-				if(L.size()<4) return;
+
 				s0 = sum0(); s1 = sum1(); s2 = sum2(); s3 = sum3();
 			}
 			public String toString() {return name;}
 			private int sum0() {return L0.get(0).score[0] + L0.get(1).score[0] + L0.get(2).score[0] + L0.get(3).score[0]; }
-			private int sum1() {return L0.get(0).score[1] + L0.get(1).score[1] + L0.get(2).score[1] + L0.get(3).score[1]; }
-			private int sum2() {return L0.get(0).score[2] + L0.get(1).score[2] + L0.get(2).score[2] + L0.get(3).score[2]; }
-			private int sum3() {return L0.get(0).score[3] + L0.get(1).score[3] + L0.get(2).score[3] + L0.get(3).score[3]; }
+			private int sum1() {return L1.get(0).score[1] + L1.get(1).score[1] + L1.get(2).score[1] + L1.get(3).score[1]; }
+			private int sum2() {return L2.get(0).score[2] + L2.get(1).score[2] + L2.get(2).score[2] + L2.get(3).score[2]; }
+			private int sum3() {return L3.get(0).score[3] + L3.get(1).score[3] + L3.get(2).score[3] + L3.get(3).score[3]; }
+			private String[] topKids(int topic)
+			{
+				ArrayList<scoreObject> roster = new ArrayList<scoreObject>();
+				switch(topic)
+				{
+					case 0: roster = L0; break;
+					case 1: roster = L1; break;
+					case 2: roster = L2; break;
+					case 3: roster = L3; break; 
+				}
+				
+				String[] tok = {roster.get(0).getName()+" ("+roster.get(0).score[topic]+")", roster.get(1).getName()+" ("+roster.get(1).score[topic]+")", roster.get(2).getName()+" ("+roster.get(2).score[topic]+")", roster.get(3).getName()+" ("+roster.get(3).score[topic]+")"};
+				return tok;
+			}
 
 		}
 		ArrayList<skool> directory = new ArrayList<skool>();
@@ -362,22 +398,23 @@ public class dhsc
 		private void displayIndividualResults()
 		{
 			int e = 20, m = 10, h = 1, temp = 0;
-			for(int i=4; i<=12; i++)
+			for(int i=5; i<=12; i++)
 			{
-				if(i==4) temp = e;
+				if(i==5) temp = e;
 				if(i==6) temp = m;
 				if(i==9) temp = h;
 				ArrayList<scoreObject> listo = new ArrayList<scoreObject>();
 				for(int j=0; j<4; j++) 
 				{
-					listo = getSpecificResults(i, i, j, temp, "");
+					listo = getSpecificResults((i==5?4:i), i, j, temp, "");
 				
-					System.out.println("Grade "+i+" "+toTopic(j)+" INDIVIDUAL");
+					pSolo.println("Grade "+i+" "+toTopic(j)+" INDIVIDUAL");
 					for(int k=0; k<listo.size(); k++)
 					{
-						System.out.println(listo.get(k));
+						pSolo.printf("%-20s%-20s %d %-40s %d%n" , listo.get(k).f_name, listo.get(k).l_name, listo.get(k).grade, listo.get(k).school, listo.get(k).score[j]);
+//						pSolo.println(listo.get(k)+" "+listo.get(k).score[j]);
 					}
-					System.out.println();
+					pSolo.println();
 				}
 			}
 		}
@@ -445,7 +482,11 @@ public class dhsc
 			}
 			public String toString()
 			{
-				return "("+f_name+" "+l_name+" "+grade+" "+school+" "+Arrays.toString(score)+")";
+				return f_name+" "+l_name+" "+grade+" "+school;
+			}
+			public String getName()
+			{
+				return f_name+" "+l_name;
 			}
 		}
 		
@@ -491,11 +532,11 @@ public class dhsc
 					int dif = 0;
 					switch(test)
 					{
-						case 0: dif= sk1.s0-sk2.s0;
-						case 1: dif= sk1.s1-sk2.s1;
-						case 2: dif= sk1.s2-sk2.s2;
-						case 3: dif= sk1.s3-sk2.s3;
-						default: dif = sk1.s0+sk1.s1+sk1.s2+sk1.s3 - sk2.s0 - sk2.s1 - sk2.s2 - sk2.s3;
+						case 0: dif= sk2.s0-sk1.s0; break;
+						case 1: dif= sk2.s1-sk1.s1; break;
+						case 2: dif= sk2.s2-sk1.s2; break;
+						case 3: dif= sk2.s3-sk1.s3; break; 
+						default: dif = sk2.s0+sk2.s1+sk2.s2+sk2.s3 - sk1.s0 - sk1.s1 - sk1.s2 - sk1.s3; break;
 					}
 					if(isElem(grade))
 					{
@@ -512,27 +553,29 @@ public class dhsc
 					}
 					else
 					{
-						if(!isMid(sk1.L0.get(0).grade)) return 1;
-						if(!isMid(sk2.L0.get(0).grade)) return -1;
+						if(!isHi(sk1.L0.get(0).grade)) return 1;
+						if(!isHi(sk2.L0.get(0).grade)) return -1;
 						return dif;
 					}
 				} };
+			
 			}
 			
 			static boolean isElem(int g) { return g<6;}
 			static boolean isMid(int g) { return g>5 && g<9; }
 			static boolean isHi(int g) {return g>8;}
 		}
-	}
-	
-	private static String toTopic(int id)
-	{
-		switch(id)
+		
+		private static String toTopic(int id)
 		{
-			case 0: return "NS";
-			case 1: return "CALC";
-			case 2: return "MATH";
-			default: return "SCI";
+			switch(id)
+			{
+				case 0: return "NS";
+				case 1: return "CALC";
+				case 2: return "MATH";
+				default: return "SCI";
+			}
 		}
+		
 	}
 }
