@@ -10,11 +10,13 @@ public class dhsc
 {
 	static PrintWriter pSweeps; 
 	static PrintWriter pSolo;
+	static PrintWriter pStatus;
 	public static void main(String[] args) throws IOException
 	{
 		Scanner c = new Scanner(new File("inputComs"));
 		pSweeps = new PrintWriter(new File("sweeps"));
 		pSolo = new PrintWriter(new File("solo"));
+		pStatus = new PrintWriter(new File("statusLog"));
 		
 		trie t = new trie(); int count=0;
 		int e = 0, m = 0, h=0; 
@@ -23,12 +25,13 @@ public class dhsc
 			String code = c.next();
 			if(code.equals("school"))
 			{
-				t.add(c.next(), t.root, 0);
+				t.add(c.next(), t.root, 0, "");
 			}
 			else if(code.equals("kid"))
 			{
-				String schoolName = c.next(), firstName = c.next(), lastName = c.next(); int grade = c.nextInt(), regCode = c.nextInt();
-				int added = t.add(schoolName.toLowerCase(), firstName.toLowerCase(), lastName.toLowerCase(), grade, regCode);
+				String schoolName = c.next(), firstName = c.next(), lastName = c.next(); int grade = c.nextInt(), regCode = c.nextInt(); String email = c.next(); 
+				System.out.println(firstName+" "+lastName);
+				int added = t.add(schoolName.toLowerCase(), firstName.toLowerCase(), lastName.toLowerCase(), grade, regCode, email);
 				if(added > 0) System.out.println("Duplicate Registration "+schoolName +" "+firstName+" "+lastName);
 				count++; 
 				
@@ -43,7 +46,7 @@ public class dhsc
 		}
 		t.tab();
 		System.out.println(e+" "+m+" "+h);
-		pSolo.close(); pSweeps.close();
+		pSolo.close(); pSweeps.close(); pStatus.close();
 	}
 
 	public static class trie
@@ -55,6 +58,7 @@ public class dhsc
 			private boolean[] is = new boolean[3]; //is[0] = is_school, is[1] = is_fName, is[2] = is_lName
 			private int[] score = new int[4];
 			private int grade;
+			private String email;
 			HashMap<Character, node> children = new HashMap<Character, node>();
 			public node(char c)
 			{
@@ -103,10 +107,10 @@ public class dhsc
 		}
 		
 		/////////// TRIE METHODS /////////////////
-		public int add(String school, String fName, String lName, int grade, int regCode)
+		public int add(String school, String fName, String lName, int grade, int regCode, String email)
 		{
 			int ret = 0;
-			add(school, "", 0); add(fName, school, 1); ret = add(lName, school+fName, 2); 
+			add(school, "", 0, ""); add(fName, school, 1, ""); ret = add(lName, school+fName, 2, email); 
 			if(ret>0) return ret;
 			
 			setGrade(school+fName+lName, grade);
@@ -115,10 +119,10 @@ public class dhsc
 			return 0;
 		}
 		
-		private int add(String str1, String str2, int type)
+		private int add(String str1, String str2, int type, String email)
 		{
 //			if(!contains(str2, root)) return 1;
-			int output = add(str1, strToNode(str2, root), type);
+			int output = add(str1, strToNode(str2, root), type, email);
 			return (output != 0) ? 1 : 0;
 		}
 		
@@ -131,7 +135,7 @@ public class dhsc
 			strToNode(str, root).grade = ind;
 		}
 		
-		private int add(String str, node rt, int type) // rt adds str, version = is[type].
+		private int add(String str, node rt, int type, String email) // rt adds str, version = is[type].
 		{
 			if(contains(str, rt)) return 1;
 			node n = rt;
@@ -147,6 +151,7 @@ public class dhsc
 				if(i==str.length()-1) 
 				{
 					n.is[type] = true;
+					n.email=email;
 				}
 			}
 			return 0;
@@ -290,8 +295,41 @@ public class dhsc
 			outputRevenue(root);
 			displaySweepstakes();
 			displayIndividualResults();
+			String[] passArr = {"", "", ""};
+			displayAll(root, passArr, 0);
+			displayMail();
 		}
 		
+		private void displayAll(node n, String[] arr, int type) // getResults(root...) adds all student's scores into 'list' as scoreObjects
+		{
+			if(!(n.c + "").equals("null")) arr[type] += n.c;
+			if(n.is[0]) 
+			{
+				arr[0]+=arr[1]+arr[2];
+				arr[1] = ""; arr[2] = "";
+				// ^^ in case of beck / beckendorff cases...
+				
+				type=1;
+			}
+			else if(n.is[1]) type=2;
+			else if(n.is[2])
+			{
+				if(!emailMap.containsKey(n.email))
+				{
+//					System.out.println(n.email);
+					emailMap.put(n.email, new emailObj());
+				}
+				for(int i=0; i<4; i++) if(n.score[i] != -1) emailMap.get(n.email).add(i);
+				pStatus.printf("%-45s %-30s %-30s %-10s%n",arr[0], arr[1], arr[2], Arrays.toString(n.score));
+				return;
+			}
+			for(char c: n.children.keySet())
+			{
+				displayAll(n.children.get(c), arr.clone(), type); 
+			}
+		}
+		
+
 		private void displaySweepstakes()
 		{
 			for(String skool0: skools)
@@ -394,7 +432,15 @@ public class dhsc
 
 		}
 		ArrayList<skool> directory = new ArrayList<skool>();
+		TreeMap<String, emailObj> emailMap = new TreeMap<String, emailObj>();
 		
+		private class emailObj
+		{
+			int[] arr = new int[4];
+			public void add(int ind) {arr[ind]++;}
+			public String toString() {return (arr[0]*6)+" "+(arr[1]*6)+" "+(arr[2]*6)+" "+(arr[3]*6)+" |"+(6*(arr[0]+arr[1]+arr[2]+arr[3]));}
+			public int getTotalMoney() {return 6*(arr[0]+arr[1]+arr[2]+arr[3]);}
+		}
 		private void displayIndividualResults()
 		{
 			int e = 20, m = 10, h = 1, temp = 0;
@@ -416,6 +462,14 @@ public class dhsc
 					}
 					pSolo.println();
 				}
+			}
+		}
+		
+		private void displayMail()
+		{
+			for(String str: emailMap.keySet())
+			{
+				pStatus.printf("%-50s%10d%10d%10d%10d%10d%n", str, emailMap.get(str).arr[0], emailMap.get(str).arr[1], emailMap.get(str).arr[2], emailMap.get(str).arr[3], emailMap.get(str).getTotalMoney());
 			}
 		}
 		
@@ -540,6 +594,7 @@ public class dhsc
 					}
 					if(isElem(grade))
 					{
+						if(!isElem(sk1.L0.get(0).grade) && !isElem(sk2.L0.get(0).grade)) return 0;
 						if(!isElem(sk1.L0.get(0).grade)) return 1;
 						if(!isElem(sk2.L0.get(0).grade)) return -1;
 						return dif;
@@ -547,12 +602,14 @@ public class dhsc
 					}
 					else if(isMid(grade))
 					{
+						if(!isMid(sk1.L0.get(0).grade) && !isMid(sk2.L0.get(0).grade)) return 0;
 						if(!isMid(sk1.L0.get(0).grade)) return 1;
 						if(!isMid(sk2.L0.get(0).grade)) return -1;
 						return dif;
 					}
 					else
 					{
+						if(!isHi(sk1.L0.get(0).grade) && !isHi(sk2.L0.get(0).grade)) return 0;
 						if(!isHi(sk1.L0.get(0).grade)) return 1;
 						if(!isHi(sk2.L0.get(0).grade)) return -1;
 						return dif;
@@ -577,5 +634,6 @@ public class dhsc
 			}
 		}
 		
+	
 	}
 }
