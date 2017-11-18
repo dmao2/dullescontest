@@ -22,6 +22,7 @@ public class dhsc
 		int e = 0, m = 0, h=0; 
 		while(c.hasNext())
 		{
+//			System.out.println(t.containsE("cypresswoodshighschoolanandiyer", t.root));
 			String code = c.next();
 			if(code.equals("school"))
 			{
@@ -79,8 +80,8 @@ public class dhsc
 					return 2; // score inputted
 				}
 				
-				System.out.println("Proceed with update of "+val+" in "+toTopic(sub)+" for "+name);
-				if(new Scanner(System.in).next().equals("y")) 
+//				System.out.println("Proceed with update of "+val+" in "+toTopic(sub)+" for "+name);
+//				if(new Scanner(System.in).next().equals("y")) 
 				{
 					score[sub] = val;
 				}
@@ -122,7 +123,6 @@ public class dhsc
 		
 		private int add(String str1, String str2, int type, String email)
 		{
-//			if(!contains(str2, root)) return 1;
 			int output = add(str1, strToNode(str2, root), type, email);
 			return (output != 0) ? 1 : 0;
 		}
@@ -171,7 +171,7 @@ public class dhsc
 		}
 		public boolean containsE(String str, node rt) // check if rt holds word str
 		{
-			node n = root;
+			node n = rt;
 			for(int i=0; i<str.length(); i++)
 			{
 				if(n.children.containsKey(str.charAt(i)))
@@ -185,7 +185,7 @@ public class dhsc
 		{
 			if(!containsE(str, rt)) return;
 			
-			node n = root, lastG = null; int indG = 0;
+			node n = rt, lastG = null; int indG = 0;
 			for(int i=0; i<str.length(); i++)
 			{
 				if(n.isEnd() || n.children.size()>1) 
@@ -226,10 +226,10 @@ public class dhsc
 				}
 			}
 			
-			if(matches.size()==0) System.out.println("Sorry. No matches.");
+			if(matches.size()==0) System.out.println("Sorry. No matches for code "+code);
 			else if(matches.size()>1)
 			{
-				System.out.println("Multiple matches detected");
+				System.out.println("Multiple matches detected for code "+code);
 				for(String str: matches) System.out.println("-- "+str);
 			}
 			else 
@@ -478,7 +478,7 @@ public class dhsc
 		{
 			for(String str: emailMap.keySet())
 			{
-				if(emailMap.get(str).getTotalMoney() > 50) 
+//				if(emailMap.get(str).getTotalMoney() > 50) 
 				{
 					pStatus.printf("%-50s%10d%10d%10d%10d%10d%n", str, emailMap.get(str).arr[0], emailMap.get(str).arr[1], emailMap.get(str).arr[2], emailMap.get(str).arr[3], emailMap.get(str).getTotalMoney());
 //					pStatus.println("Hello ,\nThank you for registering for our contest! We look forward to seeing you tomorrow.\n\nOur records have that you have registered "+
