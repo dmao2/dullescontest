@@ -1,3 +1,4 @@
+package EducationalGames;
 /*
 LANG: JAVA
 TASK: 
@@ -42,7 +43,17 @@ public class dhsc
 			}
 			else
 			{
-				t.update(code.toLowerCase(), c.nextInt(), c.nextInt());
+				String str1 = c.next(), str2 = c.next();
+				int a = 0, b = 0;
+				try
+				{
+					a = Integer.parseInt(str1); b = Integer.parseInt(str2);
+				}
+				catch(Exception ee)
+				{
+					System.err.println(str1+" "+str2+" LANDREW");
+				}
+				t.update(code.toLowerCase(), a, b);
 			}
 		}
 		t.tab();
@@ -300,6 +311,7 @@ public class dhsc
 			displayAll(root, passArr, 0);
 			displayMail();
 		}
+
 		
 		private void displayAll(node n, String[] arr, int type) // getResults(root...) adds all student's scores into 'list' as scoreObjects
 		{
@@ -322,12 +334,6 @@ public class dhsc
 			}
 			else if(n.is[2])
 			{
-				if(!emailMap.containsKey(n.email))
-				{
-//					System.out.println(n.email);
-					emailMap.put(n.email, new emailObj());
-				}
-				for(int i=0; i<4; i++) if(n.score[i] != -1) emailMap.get(n.email).add(i);
 				pStatus.printf("%-45s %-30s %-30s %-10s%n", arr[0], arr[1], arr[2], Arrays.toString(n.score));
 				return;
 			}
@@ -362,11 +368,11 @@ public class dhsc
 						skool winner = directory.get(k);
 						if(j==4)
 						{
-							pSweeps.printf("%-40s%5d%5d%5d%5d%n", winner, winner.sum0(), winner.sum1(), winner.sum2(), winner.sum3());
+							pSweeps.printf("%-20s%5d%5d%5d%5d%n", parseSchool(winner.toString())+"("+(k+1)+")", winner.sum0(), winner.sum1(), winner.sum2(), winner.sum3());
 							continue;
 						}
 						String[] winnerKids = winner.topKids(j);
-						pSweeps.printf("%-40s%-30s%-30s%-30s%-30s%n", winner, winnerKids[0], winnerKids[1], winnerKids[2], winnerKids[3]);
+						pSweeps.printf("%-20s%-30s%-30s%-30s%-30s%n", parseSchool(winner.toString())+"("+(k+1)+")", winnerKids[0], winnerKids[1], winnerKids[2], winnerKids[3]);
 					}
 					pSweeps.println();
 				}
@@ -449,6 +455,12 @@ public class dhsc
 			public void add(int ind) {arr[ind]++;}
 			public String toString() {return (arr[0]*6)+" "+(arr[1]*6)+" "+(arr[2]*6)+" "+(arr[3]*6)+" |"+(6*(arr[0]+arr[1]+arr[2]+arr[3]));}
 			public int getTotalMoney() {return 6*(arr[0]+arr[1]+arr[2]+arr[3]);}
+			
+			ArrayList<scoreObject> regList = new ArrayList<scoreObject>();
+			public void add(scoreObject o)
+			{
+				regList.add(o);
+			}
 		}
 		private void displayIndividualResults()
 		{
@@ -466,7 +478,7 @@ public class dhsc
 					pSolo.println("Grade "+i+" "+toTopic(j)+" INDIVIDUAL");
 					for(int k=0; k<listo.size(); k++)
 					{
-						pSolo.printf("%-20s%-20s %d %-40s %d%n" , listo.get(k).f_name, listo.get(k).l_name, listo.get(k).grade, listo.get(k).school, listo.get(k).score[j]);
+						pSolo.printf("%2d) %-20s%-20s %d %-40s %d%n" , (k+1), listo.get(k).f_name, listo.get(k).l_name, listo.get(k).grade, parseSchool(listo.get(k).school), listo.get(k).score[j]);
 //						pSolo.println(listo.get(k)+" "+listo.get(k).score[j]);
 					}
 					pSolo.println();
@@ -480,13 +492,29 @@ public class dhsc
 			{
 //				if(emailMap.get(str).getTotalMoney() > 50) 
 				{
-					pStatus.printf("%-50s%10d%10d%10d%10d%10d%n", str, emailMap.get(str).arr[0], emailMap.get(str).arr[1], emailMap.get(str).arr[2], emailMap.get(str).arr[3], emailMap.get(str).getTotalMoney());
+					emailObj emo = emailMap.get(str);
+					pStatus.printf("%-50s%10d%10d%10d%10d%10d%n", str, emo.arr[0], emo.arr[1], emo.arr[2], emo.arr[3], emo.getTotalMoney());
 //					pStatus.println("Hello ,\nThank you for registering for our contest! We look forward to seeing you tomorrow.\n\nOur records have that you have registered "+
 //							emailMap.get(str).arr[0]+" students in Number Sense, "+
 //							emailMap.get(str).arr[1]+" students in Calculator, "+
 //							emailMap.get(str).arr[2]+" students in General Math, and "+
 //							emailMap.get(str).arr[3]+" students in Science for a grand total of $"+emailMap.get(str).getTotalMoney()+".00. \n\nWe hope that this information should smoothen the registration process tomorrow morning."
 //									+ "\n\nThank you,\nDulles SNHS");
+					Collections.sort(emo.regList, new Comparator<scoreObject>()
+					{
+						public int compare(scoreObject so1, scoreObject so2)
+						{
+							return so1.grade-so2.grade;
+						}
+					});
+					for(int i=0; i<emo.regList.size(); i++)
+					{
+						scoreObject so = emo.regList.get(i);
+						String[] arr = new String[4];
+						for(int j=0; j<arr.length; j++)
+							arr[j] = (so.score[j] == 0 ? "?" : (so.score[j] == -1 ? "X" : so.score[j] <= -500 ? "DQ" : so.score[j]+""));
+						pStatus.printf(">>> %-30s%-30s%-4s%-4s%-4s%-4s%-4s%n", so.f_name, so.l_name, so.grade, arr[0], arr[1], arr[2], arr[3]);
+					}
 				}
 			}
 		}
@@ -535,7 +563,15 @@ public class dhsc
 			else if(n.is[1]) type=2;
 			else if(n.is[2])
 			{
-				list.add(new scoreObject(n.score, n.grade, arr[0], arr[1], arr[2])); return;
+				if(!emailMap.containsKey(n.email))
+				{
+//					System.out.println(n.email);
+					emailMap.put(n.email, new emailObj());
+				}
+				for(int i=0; i<4; i++) if(n.score[i] != -1) emailMap.get(n.email).add(i);
+				list.add(new scoreObject(n.score, n.grade, arr[0], arr[1], arr[2])); 
+				emailMap.get(n.email).add(list.get(list.size()-1));
+				return;
 			}
 			for(char c: n.children.keySet())
 			{
@@ -652,6 +688,26 @@ public class dhsc
 			}
 		}
 		
-	
+		private static String parseSchool(String str)
+		{
+			str = str.substring(1);
+			str = str.replaceAll("school", "");
+			str = str.replace("elementary", ""); str = str.replace("middle", ""); str = str.replace("high", "");
+			str = (str.charAt(0)+"").toUpperCase()+str.substring(1);
+			switch(str.toLowerCase())
+			{
+				case "annesullivan": str = "Anne Sullivan"; break;
+				case "colonymeadows": str = "Colony Meadows"; break;
+				case "rae": str = "RAE"; break;
+				case "fortsettlement": str = "Fort Settlement"; break;
+				case "quailvalley": str = "Quail Valley"; break;
+				case "berrymiller": str = "Berry Miller"; break;
+				case "sevenlakes": str = "Seven Lakes"; break;
+				case "margaretlongwisdom": str = "Wisdom"; break;
+				case "cypresswoods": str = "Cypress Woods"; break;
+			}
+			return str;
+		}
 	}
+
 }
